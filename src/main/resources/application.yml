@@ -4,6 +4,7 @@ server:
 logging:
   level:
     org.springframework.security: trace
+    org.springframework.security.oauth2: trace
 
 spring:
   jpa:

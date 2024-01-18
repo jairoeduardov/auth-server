@@ -1,17 +1,23 @@
 package io.rockettech.authserver.model.entities;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
+import io.rockettech.authserver.model.enums.RoleName;
+import jakarta.persistence.*;
 import lombok.Data;
+import org.springframework.security.core.GrantedAuthority;
 
 
 @Entity
 @Data
-public class Role {
+public class Role implements GrantedAuthority {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    private String name;
+
+    @Enumerated(EnumType.STRING)
+    private RoleName role;
+
+    @Override
+    public String getAuthority() {
+        return role.name();
+    }
 }

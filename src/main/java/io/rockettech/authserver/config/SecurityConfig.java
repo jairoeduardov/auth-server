@@ -5,6 +5,9 @@ import com.nimbusds.jose.jwk.RSAKey;
 import com.nimbusds.jose.jwk.source.ImmutableJWKSet;
 import com.nimbusds.jose.jwk.source.JWKSource;
 import com.nimbusds.jose.proc.SecurityContext;
+import io.rockettech.authserver.model.dto.MessageDto;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
@@ -14,6 +17,8 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -28,6 +33,8 @@ import org.springframework.security.oauth2.server.authorization.config.annotatio
 import org.springframework.security.oauth2.server.authorization.config.annotation.web.configurers.OAuth2AuthorizationServerConfigurer;
 import org.springframework.security.oauth2.server.authorization.settings.AuthorizationServerSettings;
 import org.springframework.security.oauth2.server.authorization.settings.ClientSettings;
+import org.springframework.security.oauth2.server.authorization.token.JwtEncodingContext;
+import org.springframework.security.oauth2.server.authorization.token.OAuth2TokenCustomizer;
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint;
@@ -41,11 +48,17 @@ import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Configuration
 @EnableWebSecurity
+@RequiredArgsConstructor
+@Slf4j
 public class SecurityConfig {
+
+    private final  PasswordEncoder passwordEncoder;
 
     @Bean
     @Order(1)
@@ -53,19 +66,16 @@ public class SecurityConfig {
             throws Exception {
         OAuth2AuthorizationServerConfiguration.applyDefaultSecurity(http);
         http.getConfigurer(OAuth2AuthorizationServerConfigurer.class)
-                .oidc(Customizer.withDefaults());	// Enable OpenID Connect 1.0
-        http
-                // Redirect to the login page when not authenticated from the
-                // authorization endpoint
-                .exceptionHandling((exceptions) -> exceptions
+            .oidc(Customizer.withDefaults());	// Enable OpenID Connect 1.0
+        http.exceptionHandling((exceptions) -> exceptions
                         .defaultAuthenticationEntryPointFor(
                                 new LoginUrlAuthenticationEntryPoint("/login"),
                                 new MediaTypeRequestMatcher(MediaType.TEXT_HTML)
                         )
-                )
-                // Accept access tokens for User Info and/or Client Registration
-                .oauth2ResourceServer((resourceServer) -> resourceServer
-                        .jwt(Customizer.withDefaults()));
+            )
+            .oauth2ResourceServer(
+                    (resourceServer) -> resourceServer.jwt(Customizer.withDefaults())
+            );
 
         return http.build();
     }
@@ -76,52 +86,76 @@ public class SecurityConfig {
             throws Exception {
         http
                 .authorizeHttpRequests((authorize) -> authorize
+                        .requestMatchers("/auth/**").permitAll()
                         .anyRequest().authenticated()
                 )
+                .formLogin(Customizer.withDefaults());
                 // Form login handles the redirect to the login page from the
                 // authorization server filter chain
-                .csrf(AbstractHttpConfigurer::disable)
-                .formLogin(Customizer.withDefaults());
+                //AbstractHttpConfigurer::disable
+                //http.csrf().ignoringRequestMatchers("/auth/**");
+        http.csrf(AbstractHttpConfigurer::disable);
+
 
         return http.build();
     }
 
     @Bean
-    public UserDetailsService userDetailsService() {
-//        UserDetails userDetails = User.withDefaultPasswordEncoder()
-//                .username("user")
-//                .password("password")
-//                .roles("USER")
-//                .build();
-        PasswordEncoder encoder = PasswordEncoderFactories.createDelegatingPasswordEncoder();
+    public OAuth2TokenCustomizer<JwtEncodingContext> tokenCustomizer(){
+        return context -> {
+            Authentication principal = context.getPrincipal();
+            if(context.getTokenType().getValue().equals("id_token")){
+                context.getClaims().claim("token_type", "id_token");
+            }
+            if(context.getTokenType().getValue().equals("access_token")){
+                context.getClaims().claim("token_type", "access_token");
+                Set<String> roles = principal.getAuthorities().stream().map(GrantedAuthority::getAuthority).collect(Collectors.toSet());
+                context.getClaims().claim("roles", roles).claim("username", principal.getName());
+            }
 
-        UserDetails user = User.withUsername("user1")
-                .password(encoder.encode("password"))
-                .roles("USER")
-                .build();
-
-        return new InMemoryUserDetailsManager(user);
+        };
     }
+
+//    @Bean
+//    public UserDetailsService userDetailsService() {
+//        PasswordEncoder encoder = PasswordEncoderFactories.createDelegatingPasswordEncoder();
+//
+//        UserDetails user = User.withUsername("user")
+//                //.password(encoder.encode("password"))
+//                .password("{noop}password")
+//                //.roles("USER")
+//                .authorities("ROLE_USER")
+//                .build();
+//
+//        return new InMemoryUserDetailsManager(user);
+//    }
 
     @Bean
     public RegisteredClientRepository registeredClientRepository() {
         RegisteredClient oidcClient = RegisteredClient.withId(UUID.randomUUID().toString())
-                .clientId("oidc-client")
-                .clientSecret("{noop}secret")
+                .clientId("client")
+                .clientSecret(passwordEncoder.encode("secret"))
                 .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
                 .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
                 .authorizationGrantType(AuthorizationGrantType.REFRESH_TOKEN)
-                .redirectUri("http://127.0.0.1:8080/login/oauth2/code/oidc-client")
-                .redirectUri("http://127.0.0.1:8080/authorized")
+                .authorizationGrantType(AuthorizationGrantType.CLIENT_CREDENTIALS)
+                //.redirectUri("http://127.0.0.1:8080/login/oauth2/code/oidc-client")
+                //.redirectUri("http://127.0.0.1:8080/authorized")
+                .redirectUri("https://oauthdebugger.com/debug")
                 .postLogoutRedirectUri("http://127.0.0.1:8080/logout")
-                .scope("read")
-                .scope("write")
+                //.scope("read")
+                //.scope("write")
                 .scope(OidcScopes.OPENID)
                 .scope(OidcScopes.PROFILE)
-                .clientSettings(ClientSettings.builder().requireAuthorizationConsent(false).build())
+                .clientSettings(clientSettings())
                 .build();
 
         return new InMemoryRegisteredClientRepository(oidcClient);
+    }
+
+    @Bean
+    public ClientSettings clientSettings(){
+        return ClientSettings.builder().requireProofKey(true).build();
     }
 
     @Bean
@@ -157,7 +191,7 @@ public class SecurityConfig {
 
     @Bean
     public AuthorizationServerSettings authorizationServerSettings() {
-        return AuthorizationServerSettings.builder().build();
+        return AuthorizationServerSettings.builder().issuer("http://localhost:9000").build();
     }
 
 }
