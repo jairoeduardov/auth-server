@@ -13,12 +13,12 @@ import org.springframework.stereotype.Service;
 import java.util.Collection;
 import java.util.stream.Collectors;
 
-@Service
-public class CustomUserDetailsService implements UserDetailsService {
-    @Autowired
+//@Service
+public class CustomUserDetailsService /*implements UserDetailsService*/ {
+    //@Autowired
     private UserRepository userRepository;
 
-    @Override
+    //@Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found with username: " + username));

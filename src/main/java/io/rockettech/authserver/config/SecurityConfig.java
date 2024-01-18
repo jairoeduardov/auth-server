@@ -13,6 +13,7 @@ import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -31,6 +32,10 @@ import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint;
 import org.springframework.security.web.util.matcher.MediaTypeRequestMatcher;
+
+
+import org.springframework.security.crypto.factory.PasswordEncoderFactories;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
@@ -75,6 +80,7 @@ public class SecurityConfig {
                 )
                 // Form login handles the redirect to the login page from the
                 // authorization server filter chain
+                .csrf(AbstractHttpConfigurer::disable)
                 .formLogin(Customizer.withDefaults());
 
         return http.build();
@@ -82,13 +88,19 @@ public class SecurityConfig {
 
     @Bean
     public UserDetailsService userDetailsService() {
-        UserDetails userDetails = User.withDefaultPasswordEncoder()
-                .username("user")
-                .password("password")
+//        UserDetails userDetails = User.withDefaultPasswordEncoder()
+//                .username("user")
+//                .password("password")
+//                .roles("USER")
+//                .build();
+        PasswordEncoder encoder = PasswordEncoderFactories.createDelegatingPasswordEncoder();
+
+        UserDetails user = User.withUsername("user1")
+                .password(encoder.encode("password"))
                 .roles("USER")
                 .build();
 
-        return new InMemoryUserDetailsManager(userDetails);
+        return new InMemoryUserDetailsManager(user);
     }
 
     @Bean
@@ -100,10 +112,13 @@ public class SecurityConfig {
                 .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
                 .authorizationGrantType(AuthorizationGrantType.REFRESH_TOKEN)
                 .redirectUri("http://127.0.0.1:8080/login/oauth2/code/oidc-client")
-                .postLogoutRedirectUri("http://127.0.0.1:8080/")
+                .redirectUri("http://127.0.0.1:8080/authorized")
+                .postLogoutRedirectUri("http://127.0.0.1:8080/logout")
+                .scope("read")
+                .scope("write")
                 .scope(OidcScopes.OPENID)
                 .scope(OidcScopes.PROFILE)
-                .clientSettings(ClientSettings.builder().requireAuthorizationConsent(true).build())
+                .clientSettings(ClientSettings.builder().requireAuthorizationConsent(false).build())
                 .build();
 
         return new InMemoryRegisteredClientRepository(oidcClient);
