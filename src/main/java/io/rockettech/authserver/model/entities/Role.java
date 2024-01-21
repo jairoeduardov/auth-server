@@ -4,8 +4,6 @@ import io.rockettech.authserver.model.enums.RoleName;
 import jakarta.persistence.*;
 import lombok.Data;
 import org.springframework.security.core.GrantedAuthority;
-
-
 @Entity
 @Data
 public class Role implements GrantedAuthority {

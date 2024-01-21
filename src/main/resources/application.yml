@@ -5,6 +5,12 @@ logging:
   level:
     org.springframework.security: trace
     org.springframework.security.oauth2: trace
+    org.hibernate:
+        SQL: debug
+        type:
+          descriptor:
+            sql:
+              BasicBinder: TRACE
 
 spring:
   jpa:
@@ -14,9 +20,14 @@ spring:
         format_sql: true
     hibernate:
         ddl-auto: create-drop
+    show-sql: true
+    defer-datasource-initialization: true
+    generate-ddl: true
+
+
 
   datasource:
-    url: jdbc:mysql://localhost:3306/asa_db?createDatabaseIfNotExist=false&userSSL=false&serverTimezone=UTC
+    url: jdbc:mysql://localhost:3306/auth_db?createDatabaseIfNotExist=false&userSSL=false&serverTimezone=UTC
     username: root
     password: S3cret4sa
     driverClassName: com.mysql.cj.jdbc.Driver

@@ -6,6 +6,7 @@ import com.nimbusds.jose.jwk.source.ImmutableJWKSet;
 import com.nimbusds.jose.jwk.source.JWKSource;
 import com.nimbusds.jose.proc.SecurityContext;
 import io.rockettech.authserver.model.dto.MessageDto;
+import io.rockettech.authserver.model.services.impls.ClientService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
@@ -59,7 +60,7 @@ import java.util.stream.Collectors;
 public class SecurityConfig {
 
     private final  PasswordEncoder passwordEncoder;
-
+    private final ClientService clientService;
     @Bean
     @Order(1)
     public SecurityFilterChain authorizationServerSecurityFilterChain(HttpSecurity http)
@@ -86,7 +87,7 @@ public class SecurityConfig {
             throws Exception {
         http
                 .authorizeHttpRequests((authorize) -> authorize
-                        .requestMatchers("/auth/**").permitAll()
+                        .requestMatchers("/auth/**","/client/**").permitAll()
                         .anyRequest().authenticated()
                 )
                 .formLogin(Customizer.withDefaults());
@@ -130,7 +131,7 @@ public class SecurityConfig {
 //        return new InMemoryUserDetailsManager(user);
 //    }
 
-    @Bean
+  /*  @Bean
     public RegisteredClientRepository registeredClientRepository() {
         RegisteredClient oidcClient = RegisteredClient.withId(UUID.randomUUID().toString())
                 .clientId("client")
@@ -151,13 +152,13 @@ public class SecurityConfig {
                 .build();
 
         return new InMemoryRegisteredClientRepository(oidcClient);
-    }
+    }*/
 
-    @Bean
+   /* @Bean
     public ClientSettings clientSettings(){
         return ClientSettings.builder().requireProofKey(true).build();
     }
-
+*/
     @Bean
     public JWKSource<SecurityContext> jwkSource() {
         KeyPair keyPair = generateRsaKey();
