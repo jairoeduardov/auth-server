@@ -17,6 +17,7 @@ import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 
+import org.springframework.security.config.annotation.web.configuration.WebSecurityCustomizer;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
@@ -65,6 +66,7 @@ public class SecurityConfig {
     @Order(1)
     public SecurityFilterChain authorizationServerSecurityFilterChain(HttpSecurity http)
             throws Exception {
+        http.cors(Customizer.withDefaults());
         OAuth2AuthorizationServerConfiguration.applyDefaultSecurity(http);
         http.getConfigurer(OAuth2AuthorizationServerConfigurer.class)
             .oidc(Customizer.withDefaults());	// Enable OpenID Connect 1.0
@@ -85,12 +87,14 @@ public class SecurityConfig {
     @Order(2)
     public SecurityFilterChain defaultSecurityFilterChain(HttpSecurity http)
             throws Exception {
+        http.cors(Customizer.withDefaults());
         http
                 .authorizeHttpRequests((authorize) -> authorize
-                        .requestMatchers("/auth/**","/client/**").permitAll()
+
+                        .requestMatchers("/auth/**","/client/**", "/error").permitAll()
                         .anyRequest().authenticated()
                 )
-                .formLogin(Customizer.withDefaults());
+                .formLogin( formLogin -> formLogin.loginPage("/login").permitAll());
                 // Form login handles the redirect to the login page from the
                 // authorization server filter chain
                 //AbstractHttpConfigurer::disable
@@ -115,6 +119,12 @@ public class SecurityConfig {
             }
 
         };
+    }
+
+    WebSecurityCustomizer webSecurityCustomizer(){
+        return (web)->
+            web.debug(false)
+                    .ignoring().requestMatchers("/webjars/**", "/images/**", "/css/**", "/assets/**", "/favicon.ico");
     }
 
 //    @Bean
