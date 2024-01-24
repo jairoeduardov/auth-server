@@ -90,8 +90,7 @@ public class SecurityConfig {
         http.cors(Customizer.withDefaults());
         http
                 .authorizeHttpRequests((authorize) -> authorize
-
-                        .requestMatchers("/auth/**","/client/**", "/error").permitAll()
+                        .requestMatchers("/oauth2/**","/auth/**","/client/**", "/error").permitAll()
                         .anyRequest().authenticated()
                 )
                 .formLogin( formLogin -> formLogin.loginPage("/login").permitAll());

@@ -67,6 +67,7 @@ public class ClientService implements RegisteredClientRepository {
                 .redirectUris(dto.getRedirectUris())
                 .scopes(dto.getScopes())
                 .requireProofKey(dto.isRequireProofKey())
+                .postLogoutRedirectUri(dto.getPostLogoutRedirectUri())
                 .build();
         return client;
     }

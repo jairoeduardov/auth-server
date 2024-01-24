@@ -8,13 +8,15 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
+import java.util.Arrays;
+
 @Configuration
 public class BeansConfig {
+
     @Bean
     public PasswordEncoder passwordEncoder(){
         return new BCryptPasswordEncoder();
     }
-
 
     @Bean
     public CorsConfigurationSource corsConfigurationSource(){
@@ -24,7 +26,7 @@ public class BeansConfig {
         cors.addAllowedMethod("*");
         cors.setAllowCredentials(true);
         cors.addAllowedOrigin("http://localhost:3000");
-        cors.addAllowedOrigin("http://localhost:5173");
+        //cors.addAllowedOriginPattern("http://localhost:3000");
         source.registerCorsConfiguration("/**", cors);
         return source;
     }

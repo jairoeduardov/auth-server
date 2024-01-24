@@ -20,4 +20,5 @@ public class CreateClientDto {
     private Set<String> redirectUris;
     private Set<String> scopes;
     private boolean requireProofKey;
+    private Set<String> postLogoutRedirectUri;
 }

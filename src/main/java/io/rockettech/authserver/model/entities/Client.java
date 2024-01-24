@@ -35,6 +35,8 @@ public class Client {
     @ElementCollection(fetch = FetchType.EAGER)
     private Set<String> scopes;
     private boolean requireProofKey;
+    @ElementCollection(fetch = FetchType.EAGER)
+    private Set<String> postLogoutRedirectUri;
 
     public static RegisteredClient toRegisteredClient(Client client){
         RegisteredClient.Builder builder = RegisteredClient.withId(client.getClientId())
@@ -44,6 +46,7 @@ public class Client {
                 .clientAuthenticationMethods(am -> am.addAll(client.getAuthenticationMethods()))
                 .authorizationGrantTypes(agt -> agt.addAll(client.getAuthorizationGrantTypes()))
                 .redirectUris(ru -> ru.addAll(client.getRedirectUris()))
+                .postLogoutRedirectUris( ru -> ru.addAll(client.getPostLogoutRedirectUri()))
                 .scopes(sc -> sc.addAll(client.getScopes()))
                 .clientSettings(ClientSettings
                         .builder().requireProofKey(client.isRequireProofKey()).build());
