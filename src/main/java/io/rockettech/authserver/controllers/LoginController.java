@@ -14,27 +14,4 @@ public class LoginController {
         return "login";
     }
 
-    @GetMapping("/logout")
-    public String logout() {
-        return "logout";
-    }
-
-    @PostMapping("/logout")
-    public String logoutOK(HttpSecurity http) throws Exception {
-        /*http.logout().logoutSuccessUrl("login?logout")
-                .deleteCookies("JSESSIONID")
-                .invalidateHttpSession(true)
-                .clearAuthentication(true);*/
-
-        http
-                .logout(logout -> logout
-                        .addLogoutHandler(new CookieClearingLogoutHandler("JSESSIONID"))
-                        .deleteCookies("JSESSIONID")
-                        .invalidateHttpSession(true)
-                        .clearAuthentication(true)
-                        .logoutSuccessUrl("/login?logout"));
-
-        return "login?logout";
-    }
-
 }
