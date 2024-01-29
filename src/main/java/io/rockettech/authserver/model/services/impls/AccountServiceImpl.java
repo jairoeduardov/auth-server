@@ -1,5 +1,6 @@
 package io.rockettech.authserver.model.services.impls;
 
+import io.rockettech.authserver.model.dto.AccountDto;
 import io.rockettech.authserver.model.dto.CreateAccountDto;
 import io.rockettech.authserver.model.dto.MessageDto;
 import io.rockettech.authserver.model.entities.Account;
@@ -8,8 +9,10 @@ import io.rockettech.authserver.model.enums.RoleName;
 import io.rockettech.authserver.model.repositories.AccountRepository;
 import io.rockettech.authserver.model.repositories.RoleRepository;
 import io.rockettech.authserver.model.services.AccountService;
+import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.modelmapper.ModelMapper;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -27,6 +30,8 @@ public class AccountServiceImpl implements AccountService {
 
     private final PasswordEncoder passwordEncoder;
 
+    private final ModelMapper modelMapper;
+
     public MessageDto createUser(CreateAccountDto dto){
         Account account = Account.builder()
                 .username(dto.username())
@@ -41,6 +46,25 @@ public class AccountServiceImpl implements AccountService {
         account.setRoles(roles);
         accountRepository.save(account);
         return new MessageDto("User " + account.getUsername() + "saved");
+    }
+
+    @Override
+    public AccountDto updateAccount(AccountDto dto, String uuid) {
+                accountRepository.findByUuid(uuid)
+                        .map(entity -> {
+                            modelMapper.map(dto, entity);
+                            System.out.println(entity);
+                            return accountRepository.save(entity);
+                        })
+                        .orElseThrow(() -> new EntityNotFoundException("Account not found UUID:" + uuid));
+        return null;
+    }
+
+    @Override
+    public AccountDto findByUuid(String uuid) {
+        return accountRepository.findByUuid(uuid)
+                .map( entity -> modelMapper.map(entity, AccountDto.class) )
+                .orElseThrow(() -> new EntityNotFoundException("Account not found UUID: " + uuid));
     }
 
 }
